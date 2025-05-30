@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự đoán Bệnh Liên quan Thời tiết</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            background: #fafafa;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .checkbox-item label {
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            margin: 0;
+        }
+        
+        .predict-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            display: block;
+            margin: 40px auto;
+            min-width: 200px;
+        }
+        
+        .predict-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-container {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        .result-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+        
+        .result-warning {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #333;
+        }
+        
+        .result-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .result-text {
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .required {
+            color: #ff6b6b;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .checkbox-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Dự đoán Bệnh Liên quan Thời tiết</h1>
+            <p>Nhập thông tin để dự đoán tình trạng sức khỏe dựa trên AI</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="predictionForm">
+                <!-- Thông tin cơ bản -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👤</span>
+                        Thông tin cơ bản <span class="required">*</span>
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age">Tuổi <span class="required">*</span></label>
+                            <input type="number" id="age" name="age" min="0" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Giới tính <span class="required">*</span></label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Chọn giới tính</option>
+                                <option value="0">Nam</option>
+                                <option value="1">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thông tin môi trường -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🌡️</span>
+                        Thông tin môi trường <span class="required">*</span>
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="temperature">Nhiệt độ (°C) <span class="required">*</span></label>
+                            <input type="number" id="temperature" name="temperature" step="0.1" min="-20" max="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="humidity">Độ ẩm (%) <span class="required">*</span></label>
+                            <input type="number" id="humidity" name="humidity" step="0.1" min="0" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="windspeed">Tốc độ gió (km/h) <span class="required">*</span></label>
+                            <input type="number" id="windspeed" name="windspeed" step="0.1" min="0" max="200" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng chung -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🤒</span>
+                        Triệu chứng chung
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fever" name="fever">
+                            <label for="fever">Sốt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_fever" name="high_fever">
+                            <label for="high_fever">Sốt cao</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="chills" name="chills">
+                            <label for="chills">Ớn lạnh</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="shivering" name="shivering">
+                            <label for="shivering">Run rẩy</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fatigue" name="fatigue">
+                            <label for="fatigue">Mệt mỏi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="weakness" name="weakness">
+                            <label for="weakness">Yếu đuối</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="body_aches" name="body_aches">
+                            <label for="body_aches">Đau nhức cơ thể</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="joint_pain" name="joint_pain">
+                            <label for="joint_pain">Đau khớp</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng đầu và mặt -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🧠</span>
+                        Triệu chứng đầu và mặt
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="headache" name="headache">
+                            <label for="headache">Đau đầu</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="severe_headache" name="severe_headache">
+                            <label for="severe_headache">Đau đầu dữ dội</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="throbbing_headache" name="throbbing_headache">
+                            <label for="throbbing_headache">Đau đầu thứ phát</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sinus_headache" name="sinus_headache">
+                            <label for="sinus_headache">Đau đầu do xoang</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dizziness" name="dizziness">
+                            <label for="dizziness">Chóng mặt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="confusion" name="confusion">
+                            <label for="confusion">Lú lẫn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pain_behind_the_eyes" name="pain_behind_the_eyes">
+                            <label for="pain_behind_the_eyes">Đau sau mắt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pain_behind_eyes" name="pain_behind_eyes">
+                            <label for="pain_behind_eyes">Đau vùng mắt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="trouble_seeing" name="trouble_seeing">
+                            <label for="trouble_seeing">Khó nhìn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="facial_pain" name="facial_pain">
+                            <label for="facial_pain">Đau mặt</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng hô hấp -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🫁</span>
+                        Triệu chứng hô hấp
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cough" name="cough">
+                            <label for="cough">Ho</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="runny_nose" name="runny_nose">
+                            <label for="runny_nose">Chảy nước mũi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sneezing" name="sneezing">
+                            <label for="sneezing">Hắt hơi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sore_throat" name="sore_throat">
+                            <label for="sore_throat">Đau họng</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="shortness_of_breath" name="shortness_of_breath">
+                            <label for="shortness_of_breath">Khó thở</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rapid_breathing" name="rapid_breathing">
+                            <label for="rapid_breathing">Thở nhanh</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="chest_pain" name="chest_pain">
+                            <label for="chest_pain">Đau ngực</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reduced_smell_and_taste" name="reduced_smell_and_taste">
+                            <label for="reduced_smell_and_taste">Mất vị/mùi</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng tiêu hóa -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🍽️</span>
+                        Triệu chứng tiêu hóa
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="nausea" name="nausea">
+                            <label for="nausea">Buồn nôn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="vomiting" name="vomiting">
+                            <label for="vomiting">Nôn mửa</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="abdominal_pain" name="abdominal_pain">
+                            <label for="abdominal_pain">Đau bụng</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="diarrhea" name="diarrhea">
+                            <label for="diarrhea">Tiêu chảy</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng khác -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🩺</span>
+                        Triệu chứng khác
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rapid_heart_rate" name="rapid_heart_rate">
+                            <label for="rapid_heart_rate">Tim đập nhanh</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="swollen_glands" name="swollen_glands">
+                            <label for="swollen_glands">Hạch sưng</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rashes" name="rashes">
+                            <label for="rashes">Phát ban</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="skin_irritation" name="skin_irritation">
+                            <label for="skin_irritation">Kích ứng da</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="itchiness" name="itchiness">
+                            <label for="itchiness">Ngứa</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="back_pain" name="back_pain">
+                            <label for="back_pain">Đau lưng</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="knee_ache" name="knee_ache">
+                            <label for="knee_ache">Đau đầu gối</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tiền sử bệnh -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">📋</span>
+                        Tiền sử bệnh
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="asthma_history" name="asthma_history">
+                            <label for="asthma_history">Tiền sử hen suyễn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="asthma" name="asthma">
+                            <label for="asthma">Hen suyễn hiện tại</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_cholesterol" name="high_cholesterol">
+                            <label for="high_cholesterol">Cholesterol cao</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="diabetes" name="diabetes">
+                            <label for="diabetes">Tiểu đường</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obesity" name="obesity">
+                            <label for="obesity">Béo phì</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_blood_pressure" name="high_blood_pressure">
+                            <label for="high_blood_pressure">Huyết áp cao</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="hiv_aids" name="hiv_aids">
+                            <label for="hiv_aids">HIV/AIDS</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="nasal_polyps" name="nasal_polyps">
+                            <label for="nasal_polyps">Polyp mũi</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="predict-btn" id="predictBtn">
+                    <span id="btnText">🔮 Dự đoán bệnh</span>
+                    <span id="btnLoading" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div id="resultContainer" class="result-container">
+                <div class="result-title" id="resultTitle"></div>
+                <div class="result-text" id="resultText"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('predictBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            // Hiển thị trạng thái loading
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            resultContainer.style.display = 'none';
+            
+            // Collect form data
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            // Thông tin cơ bản và môi trường
+            data.age = parseInt(formData.get('age')) || 0;
+            data.gender = parseInt(formData.get('gender')) || 0;
+            data.temperature = parseFloat(formData.get('temperature')) || 0;
+            data.humidity = parseFloat(formData.get('humidity')) || 0;
+            data.windspeed = parseFloat(formData.get('windspeed')) || 0;
+            
+            // Các triệu chứng và tiền sử (checkbox)
+            const symptoms = [
+                'nausea', 'joint_pain', 'abdominal_pain', 'high_fever', 'chills', 'fatigue',
+                'runny_nose', 'pain_behind_the_eyes', 'dizziness', 'headache', 'chest_pain',
+                'vomiting', 'cough', 'shivering', 'asthma_history', 'high_cholesterol',
+                'diabetes', 'obesity', 'hiv_aids', 'nasal_polyps', 'asthma', 'high_blood_pressure',
+                'severe_headache', 'weakness', 'trouble_seeing', 'fever', 'body_aches',
+                'sore_throat', 'sneezing', 'diarrhea', 'rapid_breathing', 'rapid_heart_rate',
+                'pain_behind_eyes', 'swollen_glands', 'rashes', 'sinus_headache', 'facial_pain',
+                'shortness_of_breath', 'reduced_smell_and_taste', 'skin_irritation', 'itchiness',
+                'throbbing_headache', 'confusion', 'back_pain', 'knee_ache'
+            ];
+            
+            symptoms.forEach(symptom => {
+                data[symptom] = formData.get(symptom) ? 1 : 0;
+            });
+            
+            try {
+                // Gọi API thực tế thay vì simulation
+                await callRealModelAPI(data);
+                
+            } catch (error) {
+                showResult('Lỗi', 'Có lỗi xảy ra khi dự đoán. Vui lòng thử lại.', 'warning');
+            } finally {
+                // Reset button state
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        });
+        
+        async function callRealModelAPI(data) {
+            try {
+                // Gọi API thực tế
+                const response = await fetch('http://localhost:5000/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Lỗi không xác định từ API');
+                }
+                
+                // Hiển thị kết quả từ mô hình thực tế
+                const prediction = result.prediction;
+                const topPredictions = result.top_predictions || [];
+                const recommendations = result.recommendation || [];
+                
+                let resultType = 'success';
+                let title = '🤖 Kết quả từ AI';
+                
+                // Tạo thông tin về top predictions
+                let topPredictionsHTML = '';
+                if (topPredictions.length > 1) {
+                    topPredictionsHTML = '<br><strong>Các khả năng khác:</strong><br>';
+                    topPredictions.slice(1).forEach((pred, index) => {
+                        topPredictionsHTML += `${index + 2}. ${pred.disease} (${pred.probability}%)<br>`;
+                    });
+                }
+                
+                // Tạo danh sách khuyến nghị
+                let recommendationHTML = '';
+                if (recommendations.length > 0) {
+                    recommendationHTML = '<strong>Khuyến nghị:</strong><br>';
+                    recommendations.forEach(rec => {
+                        recommendationHTML += `• ${rec}<br>`;
+                    });
+                }
+                
+                let message = `
+                    <strong>🎯 Chẩn đoán dự đoán:</strong> ${prediction.disease}<br>
+                    <strong>📊 Độ tin cậy:</strong> ${prediction.confidence}% (${prediction.confidence_level})<br>
+                    ${topPredictionsHTML}
+                    <br>${recommendationHTML}
+                `;
+                
+                // Xác định loại kết quả dựa trên độ tin cậy và nội dung
+                if (prediction.confidence < 60) {
+                    resultType = 'warning';
+                    title = '⚠️ Kết quả cần xem xét';
+                } else if (prediction.disease.toLowerCase().includes('emergency') || 
+                          prediction.disease.toLowerCase().includes('severe') ||
+                          recommendations.some(rec => rec.includes('ngay lập tức'))) {
+                    resultType = 'warning';
+                    title = '🚨 Cần chú ý';
+                }
+                
+                showResult(title, message, resultType);
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Hiển thị lỗi thân thiện
+                let errorMessage = 'Không thể kết nối đến server AI. ';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage += 'Vui lòng kiểm tra:<br>• Server API có đang chạy không?<br>• Kết nối mạng có ổn định không?';
+                } else {
+                    errorMessage += `Lỗi: ${error.message}`;
+                }
+                
+                showResult('❌ Lỗi kết nối', errorMessage, 'warning');
+            }
+        }
+        
+        function showResult(title, message, type) {
+            const resultContainer = document.getElementById('resultContainer');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultText = document.getElementById('resultText');
+            
+            resultTitle.textContent = title;
+            resultText.innerHTML = message;
+            
+            resultContainer.className = `result-container result-${type}`;
+            resultContainer.style.display = 'block';
+            
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Add form validation
+        document.querySelectorAll('input[required]').forEach(input => {
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.style.borderColor = '#ff6b6b';
+                } else {
+                    this.style.borderColor = '#ddd';
+                }
+            });
+        });
+        
+        // Add disclaimer
+        window.addEventListener('load', function() {
+            const disclaimer = document.createElement('div');
+            disclaimer.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px;
+                border-radius: 10px;
+                max-width: 300px;
+                font-size: 0.9em;
+                z-index: 1000;
+            `;
+            disclaimer.innerHTML = `
+                <strong>⚠️ Lưu ý:</strong> Đây chỉ là công cụ hỗ trợ dự đoán. 
+                Kết quả không thay thế ý kiến bác sĩ. Hãy tham khảo ý kiến chuyên gia y tế.
+            `;
+            document.body.appendChild(disclaimer);
+            
+            // Auto hide after 10 seconds
+            setTimeout(() => {
+                disclaimer.style.opacity = '0';
+                disclaimer.style.transition = 'opacity 1s';
+                setTimeout(() => disclaimer.remove(), 1000);
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

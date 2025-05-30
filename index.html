@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự đoán Bệnh với AI Giải thích</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            background: #fafafa;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .checkbox-item label {
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            margin: 0;
+        }
+        
+        .predict-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            display: block;
+            margin: 40px auto;
+            min-width: 200px;
+        }
+        
+        .predict-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-container {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        .result-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+        
+        .result-warning {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #333;
+        }
+        
+        .result-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .result-text {
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        
+        .lime-explanation {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            display: none;
+            text-align: left;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .lime-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .lime-title .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .explanation-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .explanation-summary h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .explanation-summary p {
+            margin: 0;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .simple-chart {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 100%;
+            overflow: hidden;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            max-height: 400px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        #limeChart {
+            max-width: 100% !important;
+            max-height: 350px !important;
+            height: 350px !important;
+        }
+        
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+            background: #fafafa;
+        }
+        
+        .feature-item.positive {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .feature-item.negative {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+        
+        .feature-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .feature-impact {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+        
+        .feature-impact.positive {
+            color: #28a745;
+        }
+        
+        .feature-impact.negative {
+            color: #dc3545;
+        }
+        
+        .toggle-explanation {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+            min-width: 250px;
+        }
+        
+        .toggle-explanation:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .required {
+            color: #ff6b6b;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .checkbox-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 300px;
+                max-height: 300px;
+            }
+            
+            #limeChart {
+                max-height: 250px !important;
+                height: 250px !important;
+            }
+            
+            .toggle-explanation {
+                padding: 12px 20px;
+                font-size: 1em;
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Dự đoán Bệnh với AI</h1>
+            <p>Nhập thông tin để dự đoán tình trạng sức khỏe + AI giải thích</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="predictionForm">
+                <!-- Thông tin cơ bản -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👤</span>
+                        Thông tin cơ bản <span class="required">*</span>
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age">Tuổi <span class="required">*</span></label>
+                            <input type="number" id="age" name="age" min="0" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Giới tính <span class="required">*</span></label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Chọn giới tính</option>
+                                <option value="0">Nam</option>
+                                <option value="1">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thông tin môi trường -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🌡️</span>
+                        Thông tin môi trường <span class="required">*</span>
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="temperature">Nhiệt độ (°C) <span class="required">*</span></label>
+                            <input type="number" id="temperature" name="temperature" step="0.1" min="-20" max="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="humidity">Độ ẩm (%) <span class="required">*</span></label>
+                            <input type="number" id="humidity" name="humidity" step="0.1" min="0" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="windspeed">Tốc độ gió (km/h) <span class="required">*</span></label>
+                            <input type="number" id="windspeed" name="windspeed" step="0.1" min="0" max="200" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triệu chứng chính -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🤒</span>
+                        Triệu chứng chính (chọn những gì bạn có)
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fever" name="fever">
+                            <label for="fever">Sốt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_fever" name="high_fever">
+                            <label for="high_fever">Sốt cao</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="headache" name="headache">
+                            <label for="headache">Đau đầu</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cough" name="cough">
+                            <label for="cough">Ho</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="runny_nose" name="runny_nose">
+                            <label for="runny_nose">Chảy nước mũi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sore_throat" name="sore_throat">
+                            <label for="sore_throat">Đau họng</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fatigue" name="fatigue">
+                            <label for="fatigue">Mệt mỏi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="body_aches" name="body_aches">
+                            <label for="body_aches">Đau nhức cơ thể</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="nausea" name="nausea">
+                            <label for="nausea">Buồn nôn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="vomiting" name="vomiting">
+                            <label for="vomiting">Nôn mửa</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="diarrhea" name="diarrhea">
+                            <label for="diarrhea">Tiêu chảy</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="shortness_of_breath" name="shortness_of_breath">
+                            <label for="shortness_of_breath">Khó thở</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="chest_pain" name="chest_pain">
+                            <label for="chest_pain">Đau ngực</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dizziness" name="dizziness">
+                            <label for="dizziness">Chóng mặt</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="joint_pain" name="joint_pain">
+                            <label for="joint_pain">Đau khớp</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="rashes" name="rashes">
+                            <label for="rashes">Phát ban</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tiền sử bệnh quan trọng -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">📋</span>
+                        Tiền sử bệnh quan trọng
+                    </h3>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="diabetes" name="diabetes">
+                            <label for="diabetes">Tiểu đường</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_blood_pressure" name="high_blood_pressure">
+                            <label for="high_blood_pressure">Huyết áp cao</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="asthma" name="asthma">
+                            <label for="asthma">Hen suyễn</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obesity" name="obesity">
+                            <label for="obesity">Béo phì</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="high_cholesterol" name="high_cholesterol">
+                            <label for="high_cholesterol">Cholesterol cao</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="predict-btn" id="predictBtn">
+                    <span id="btnText">🔮 Dự đoán bệnh với AI</span>
+                    <span id="btnLoading" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div id="resultContainer" class="result-container">
+                <div class="result-title" id="resultTitle"></div>
+                <div class="result-text" id="resultText"></div>
+                
+                <button class="toggle-explanation" id="toggleExplanation" onclick="toggleLimeExplanation()" style="display: none;">
+                    🧠 Giải thích AI: Tại sao có kết quả này?
+                </button>
+            </div>
+            
+            <div id="limeExplanation" class="lime-explanation">
+                <div class="lime-title">
+                    <span class="icon">🔬</span>
+                    AI Giải thích: Tại sao có kết quả này?
+                </div>
+                
+                <div class="explanation-summary">
+                    <h4>💡 Tóm tắt giải thích:</h4>
+                    <p id="explanationSummary">Đang tải...</p>
+                </div>
+                
+                <div class="simple-chart">
+                    <div class="chart-title">📊 Top yếu tố ảnh hưởng nhất</div>
+                    <div class="chart-container">
+                        <canvas id="limeChart"></canvas>
+                        <div id="chartLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;">
+                            <div class="loading"></div>
+                            <div style="margin-top: 10px; color: #666;">Đang tạo biểu đồ...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="simple-chart">
+                    <div class="chart-title">📝 Chi tiết các yếu tố quan trọng</div>
+                    <div id="featureList">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let limeChart = null;
+        
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('predictBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            // Hiển thị loading
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            resultContainer.style.display = 'none';
+            
+            // Ẩn explanation từ lần trước
+            document.getElementById('limeExplanation').style.display = 'none';
+            document.getElementById('toggleExplanation').style.display = 'none';
+            
+            // Collect form data
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            // Basic info
+            data.age = parseInt(formData.get('age')) || 0;
+            data.gender = parseInt(formData.get('gender')) || 0;
+            data.temperature = parseFloat(formData.get('temperature')) || 0;
+            data.humidity = parseFloat(formData.get('humidity')) || 0;
+            data.windspeed = parseFloat(formData.get('windspeed')) || 0;
+            
+            // Tất cả triệu chứng có thể có từ CSV
+            const allSymptoms = [
+                'nausea', 'joint_pain', 'abdominal_pain', 'high_fever', 'chills', 'fatigue',
+                'runny_nose', 'pain_behind_the_eyes', 'dizziness', 'headache', 'chest_pain',
+                'vomiting', 'cough', 'shivering', 'asthma_history', 'high_cholesterol',
+                'diabetes', 'obesity', 'hiv_aids', 'nasal_polyps', 'asthma', 'high_blood_pressure',
+                'severe_headache', 'weakness', 'trouble_seeing', 'fever', 'body_aches',
+                'sore_throat', 'sneezing', 'diarrhea', 'rapid_breathing', 'rapid_heart_rate',
+                'pain_behind_eyes', 'swollen_glands', 'rashes', 'sinus_headache', 'facial_pain',
+                'shortness_of_breath', 'reduced_smell_and_taste', 'skin_irritation', 'itchiness',
+                'throbbing_headache', 'confusion', 'back_pain', 'knee_ache'
+            ];
+            
+            // Set tất cả symptoms = 0, sau đó update những cái được chọn
+            allSymptoms.forEach(symptom => {
+                data[symptom] = 0;
+            });
+            
+            // Update symptoms được chọn trong form
+            allSymptoms.forEach(symptom => {
+                if (formData.get(symptom)) {
+                    data[symptom] = 1;
+                }
+            });
+            
+            try {
+                await callRealModelAPI(data);
+            } catch (error) {
+                console.error('Main Error:', error);
+                showResult('❌ Lỗi', 'Có lỗi xảy ra khi dự đoán. Đang tạo demo giải thích...', 'warning');
+                
+                // Hiển thị button và tạo demo explanation khi lỗi
+                document.getElementById('toggleExplanation').style.display = 'block';
+                setTimeout(() => {
+                    const demoResult = createDemoResult(data);
+                    createDemoExplanation(data, demoResult.prediction);
+                }, 500);
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        });
+        
+        async function callRealModelAPI(data) {
+            try {
+                console.log('Sending data to API:', data);
+                
+                const response = await fetch('http://localhost:5000/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('API result:', result);
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Lỗi không xác định từ API');
+                }
+                
+                // Hiển thị kết quả
+                const prediction = result.prediction;
+                const topPredictions = result.top_predictions || [];
+                const recommendations = result.recommendation || [];
+                const limeExplanation = result.lime_explanation || null;
+                
+                let resultType = 'success';
+                let title = '🤖 Kết quả từ AI';
+                
+                // Tạo message
+                let topPredictionsHTML = '';
+                if (topPredictions.length > 1) {
+                    topPredictionsHTML = '<br><strong>Các khả năng khác:</strong><br>';
+                    topPredictions.slice(1, 4).forEach((pred, index) => {
+                        topPredictionsHTML += `${index + 2}. ${pred.disease} (${pred.probability}%)<br>`;
+                    });
+                }
+                
+                let recommendationHTML = '';
+                if (recommendations.length > 0) {
+                    recommendationHTML = '<strong>💊 Khuyến nghị:</strong><br>';
+                    recommendations.forEach(rec => {
+                        recommendationHTML += `• ${rec}<br>`;
+                    });
+                }
+                
+                let message = `
+                    <strong>🎯 Chẩn đoán AI:</strong> ${prediction.disease}<br>
+                    <strong>📊 Độ tin cậy:</strong> ${prediction.confidence}% (${prediction.confidence_level})<br>
+                    ${topPredictionsHTML}
+                    <br>${recommendationHTML}
+                `;
+                
+                if (prediction.confidence < 60) {
+                    resultType = 'warning';
+                    title = '⚠️ Kết quả cần xem xét';
+                }
+                
+                showResult(title, message, resultType);
+                
+                // LUÔN hiển thị button giải thích (debug)
+                console.log('LIME explanation data:', limeExplanation);
+                document.getElementById('toggleExplanation').style.display = 'block';
+                
+                // Hiển thị LIME nếu có data, nếu không có thì tạo demo
+                if (limeExplanation && limeExplanation.feature_importance && limeExplanation.feature_importance.length > 0) {
+                    console.log('Using real LIME data');
+                    showLimeExplanation(limeExplanation);
+                } else {
+                    console.log('No LIME data, creating demo explanation');
+                    createDemoExplanation(data, prediction);
+                }
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Vẫn hiển thị button giải thích kể cả khi API lỗi
+                document.getElementById('toggleExplanation').style.display = 'block';
+                
+                let errorMessage = 'Không thể kết nối đến AI server. ';
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage += 'Đang sử dụng AI demo để giải thích.';
+                    
+                    // Tạo demo prediction cho trường hợp API không hoạt động
+                    const demoResult = createDemoResult(data);
+                    showResult('🤖 Demo AI (Server offline)', demoResult.message, 'warning');
+                    createDemoExplanation(data, demoResult.prediction);
+                } else {
+                    errorMessage += `Chi tiết: ${error.message}`;
+                    showResult('❌ Lỗi kết nối', errorMessage, 'warning');
+                }
+            }
+        }
+        
+        function createDemoResult(data) {
+            // Tạo demo result khi API không hoạt động
+            let disease = 'Cần theo dõi thêm';
+            let confidence = 75;
+            
+            // Simple rule-based prediction cho demo
+            if (data.fever && data.headache && data.body_aches) {
+                disease = 'Cúm';
+                confidence = 85;
+            } else if (data.fever && data.cough) {
+                disease = 'Nhiễm trùng đường hô hấp';
+                confidence = 80;
+            } else if (data.nausea && data.vomiting) {
+                disease = 'Rối loạn tiêu hóa';
+                confidence = 78;
+            } else if (data.headache && data.dizziness) {
+                disease = 'Đau đầu căng thẳng';
+                confidence = 70;
+            }
+            
+            const prediction = {
+                disease: disease,
+                confidence: confidence,
+                confidence_level: confidence >= 80 ? 'Cao' : confidence >= 60 ? 'Trung bình' : 'Thấp'
+            };
+            
+            const message = `
+                <strong>🎯 Chẩn đoán Demo:</strong> ${disease}<br>
+                <strong>📊 Độ tin cậy:</strong> ${confidence}% (${prediction.confidence_level})<br>
+                <br><strong>💊 Khuyến nghị:</strong><br>
+                • Nghỉ ngơi đầy đủ<br>
+                • Theo dõi triệu chứng<br>
+                • Đi khám bác sĩ nếu triệu chứng nặng hơn<br>
+                <br><em>⚠️ Đây là demo khi server AI offline</em>
+            `;
+            
+            return { prediction, message };
+        }
+        
+        
+        function showResult(title, message, type) {
+            const resultContainer = document.getElementById('resultContainer');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultText = document.getElementById('resultText');
+            
+            resultTitle.textContent = title;
+            resultText.innerHTML = message;
+            
+            resultContainer.className = `result-container result-${type}`;
+            resultContainer.style.display = 'block';
+            
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function createDemoExplanation(inputData, prediction) {
+            // Tạo demo explanation khi không có LIME từ API
+            console.log('Creating demo explanation with input:', inputData);
+            
+            const demoFeatures = [];
+            
+            // Phân tích input data để tạo demo explanation
+            if (inputData.fever || inputData.high_fever) {
+                demoFeatures.push({
+                    feature: 'fever',
+                    display_name: inputData.high_fever ? 'Sốt cao' : 'Sốt',
+                    importance: 0.25,
+                    impact: 'positive'
+                });
+            }
+            
+            if (inputData.headache) {
+                demoFeatures.push({
+                    feature: 'headache',
+                    display_name: 'Đau đầu',
+                    importance: 0.18,
+                    impact: 'positive'
+                });
+            }
+            
+            if (inputData.cough) {
+                demoFeatures.push({
+                    feature: 'cough',
+                    display_name: 'Ho',
+                    importance: 0.15,
+                    impact: 'positive'
+                });
+            }
+            
+            if (inputData.body_aches) {
+                demoFeatures.push({
+                    feature: 'body_aches',
+                    display_name: 'Đau nhức cơ thể',
+                    importance: 0.12,
+                    impact: 'positive'
+                });
+            }
+            
+            if (inputData.fatigue) {
+                demoFeatures.push({
+                    feature: 'fatigue',
+                    display_name: 'Mệt mỏi',
+                    importance: 0.10,
+                    impact: 'positive'
+                });
+            }
+            
+            // Thêm thông tin cơ bản
+            if (inputData.age > 0) {
+                demoFeatures.push({
+                    feature: 'age',
+                    display_name: `Tuổi (${inputData.age})`,
+                    importance: inputData.age > 60 ? 0.08 : -0.05,
+                    impact: inputData.age > 60 ? 'positive' : 'negative'
+                });
+            }
+            
+            if (inputData.temperature > 37) {
+                demoFeatures.push({
+                    feature: 'temperature',
+                    display_name: `Nhiệt độ (${inputData.temperature}°C)`,
+                    importance: 0.20,
+                    impact: 'positive'
+                });
+            }
+            
+            // Thêm factors giảm khả năng (negative)
+            if (!inputData.diabetes) {
+                demoFeatures.push({
+                    feature: 'no_diabetes',
+                    display_name: 'Không có tiểu đường',
+                    importance: -0.03,
+                    impact: 'negative'
+                });
+            }
+            
+            if (!inputData.high_blood_pressure) {
+                demoFeatures.push({
+                    feature: 'no_hypertension',
+                    display_name: 'Huyết áp bình thường',
+                    importance: -0.04,
+                    impact: 'negative'
+                });
+            }
+            
+            // Sắp xếp theo importance
+            demoFeatures.sort((a, b) => Math.abs(b.importance) - Math.abs(a.importance));
+            
+            const demoExplanation = {
+                feature_importance: demoFeatures,
+                explanation_summary: createDemoSummary(demoFeatures, prediction),
+                predicted_class: prediction.disease || 'Unknown'
+            };
+            
+            showLimeExplanation(demoExplanation);
+        }
+        
+        function createDemoSummary(features, prediction) {
+            const positiveFeatures = features.filter(f => f.impact === 'positive').slice(0, 3);
+            const negativeFeatures = features.filter(f => f.impact === 'negative').slice(0, 2);
+            
+            let summary = '';
+            
+            if (positiveFeatures.length > 0) {
+                const names = positiveFeatures.map(f => f.display_name);
+                summary += `Các yếu tố chính dẫn đến chẩn đoán "${prediction.disease}": ${names.join(', ')}`;
+            }
+            
+            if (negativeFeatures.length > 0) {
+                const names = negativeFeatures.map(f => f.display_name);
+                summary += `. Các yếu tố làm giảm khả năng: ${names.join(', ')}`;
+            }
+            
+            if (!summary) {
+                summary = `AI đã phân tích các thông tin bạn cung cấp để đưa ra chẩn đoán "${prediction.disease}" với độ tin cậy ${prediction.confidence}%`;
+            }
+            
+            return summary + '.';
+        }
+        
+        function showLimeExplanation(limeData) {
+            console.log('Showing LIME explanation with', limeData.feature_importance.length, 'features');
+            
+            const summaryElement = document.getElementById('explanationSummary');
+            const featureListElement = document.getElementById('featureList');
+            
+            // Hiển thị summary
+            summaryElement.textContent = limeData.explanation_summary || 'AI đã phân tích các yếu tố ảnh hưởng đến chẩn đoán này.';
+            
+            // Top features (giới hạn 8 để chart không quá dài)
+            const features = limeData.feature_importance.slice(0, 8);
+            console.log('Creating chart with features:', features);
+            
+            // Tạo feature list
+            featureListElement.innerHTML = '';
+            features.forEach((feature, index) => {
+                const featureDiv = document.createElement('div');
+                featureDiv.className = `feature-item ${feature.impact}`;
+                
+                const impactText = feature.impact === 'positive' ? '⬆️ Tăng khả năng' : '⬇️ Giảm khả năng';
+                
+                featureDiv.innerHTML = `
+                    <span class="feature-name">${index + 1}. ${feature.display_name}</span>
+                    <span class="feature-impact ${feature.impact}">
+                        ${impactText} (${Math.abs(feature.importance).toFixed(3)})
+                    </span>
+                `;
+                
+                featureListElement.appendChild(featureDiv);
+            });
+            
+            // Tạo chart với timeout để đảm bảo DOM ready
+            setTimeout(() => {
+                showChartLoading(true);
+                createSimpleLimeChart(features);
+                showChartLoading(false);
+            }, 100);
+        }
+        
+        function showChartLoading(show) {
+            const loadingElement = document.getElementById('chartLoading');
+            if (loadingElement) {
+                loadingElement.style.display = show ? 'block' : 'none';
+            }
+        }
+        
+        function createSimpleLimeChart(features) {
+            const canvas = document.getElementById('limeChart');
+            if (!canvas) {
+                console.error('Canvas element not found!');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (limeChart) {
+                limeChart.destroy();
+            }
+            
+            console.log('Creating chart with', features.length, 'features');
+            
+            const labels = features.map(f => 
+                f.display_name.length > 12 ? f.display_name.substring(0, 12) + '...' : f.display_name
+            );
+            const importances = features.map(f => f.importance);
+            const colors = features.map(f => 
+                f.impact === 'positive' ? '#28a745' : '#dc3545'
+            );
+            
+            limeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Mức độ ảnh hưởng',
+                        data: importances,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            display: false 
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return features[context[0].dataIndex].display_name;
+                                },
+                                label: function(context) {
+                                    const impact = context.parsed.x > 0 ? 'Tăng' : 'Giảm';
+                                    return `${impact}: ${Math.abs(context.parsed.x).toFixed(3)}`;
+                                }
+                            },
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { 
+                                display: true, 
+                                text: 'Mức độ ảnh hưởng',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            ticks: {
+                                font: { size: 10 }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: { 
+                                font: { size: 10 },
+                                maxRotation: 0,
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 15 ? label.substring(0, 15) + '...' : label;
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart',
+                        onComplete: function() {
+                            // Hide loading khi animation hoàn thành
+                            showChartLoading(false);
+                            console.log('Chart created successfully with height:', canvas.height);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function toggleLimeExplanation() {
+            const explanationDiv = document.getElementById('limeExplanation');
+            const toggleBtn = document.getElementById('toggleExplanation');
+            
+            if (explanationDiv.style.display === 'none' || !explanationDiv.style.display) {
+                explanationDiv.style.display = 'block';
+                toggleBtn.innerHTML = '🔼 Ẩn giải thích AI';
+                setTimeout(() => {
+                    explanationDiv.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            } else {
+                explanationDiv.style.display = 'none';
+                toggleBtn.innerHTML = '🧠 Giải thích AI: Tại sao có kết quả này?';
+            }
+        }
+        
+        // Form validation
+        document.querySelectorAll('input[required]').forEach(input => {
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.style.borderColor = '#ff6b6b';
+                } else {
+                    this.style.borderColor = '#ddd';
+                }
+            });
+        });
+        
+        // Disclaimer
+        window.addEventListener('load', function() {
+            const disclaimer = document.createElement('div');
+            disclaimer.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px;
+                border-radius: 10px;
+                max-width: 300px;
+                font-size: 0.9em;
+                z-index: 1000;
+            `;
+            disclaimer.innerHTML = `
+                <strong>⚠️ Lưu ý:</strong> Đây là công cụ hỗ trợ AI. 
+                Kết quả không thay thế ý kiến bác sĩ. 
+                <br><br><strong>🧠 AI sẽ giải thích</strong> tại sao có kết quả này.
+            `;
+            document.body.appendChild(disclaimer);
+            
+            setTimeout(() => {
+                disclaimer.style.opacity = '0';
+                disclaimer.style.transition = 'opacity 1s';
+                setTimeout(() => disclaimer.remove(), 1000);
+            }, 8000);
+        });
+    </script>
+</body>
+</html>
